@@ -7,6 +7,12 @@ examples = function() {
 
 }
 
+na_val = function (x, val = 0) {
+  x[is.na(x)] = val
+  x
+}
+
+
 find_number_in_string <- function(text, mode="first", allow_pre = "[\\[\\(\\{, ]*", from_start=FALSE, normalize=FALSE) {
   restore.point("find_number_in_string")
   number_regex <- "(-\\s*)?\\d{1,3}(?:[ ,](?=\\d{3}(?!\\d))\\d{3})*(?:\\.\\d+)?"

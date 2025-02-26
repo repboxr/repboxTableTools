@@ -1,15 +1,12 @@
 # Functions to show cell test results as HTML
 
-
-
-
 cells_to_tabhtml = function(cell_df, tabid_prefix="tab-", add_flags = FALSE) {
-  restore.point("cells_to_tabhtml")  
-  
+  restore.point("cells_to_tabhtml")
+
   if (add_flags) {
-    cell_df = cells_add_flag_cols_html(cell_df) 
+    cell_df = cells_add_flag_cols_html(cell_df)
   }
-  
+
   if (!has_col(cell_df, "class")) cell_df$class = ""
   if (!has_col(cell_df, "title")) cell_df$title = ""
   if (!has_col(cell_df, "style")) cell_df$style = ""
@@ -35,7 +32,7 @@ cells_to_tabhtml = function(cell_df, tabid_prefix="tab-", add_flags = FALSE) {
     summarize(
       tabhtml = paste0('<table id="', tabid_prefix,first(tabid),'" class = "', first(tab_class),'">\n',paste0(tr_code, collapse="\n  "), '\n</table>')
     )
-  
+
   tab_df
 }
 
@@ -44,20 +41,20 @@ cells_add_flag_cols_html = function(df, just_cols=NULL) {
   flag_cols = get_flag_cols(df, just_cols)
   tests = stri_sub(flag_cols, 6)
   bg_colors = named_bg_colors(tests)
-  
+
   test_str = flag_cols_to_str(df, flag_cols)
   uni_test_str = unique(test_str)
-  uni_test_class = stri_replace_all_fixed(uni_test_str, "-"," ") 
+  uni_test_class = stri_replace_all_fixed(uni_test_str, "-"," ")
   names(uni_test_class) = uni_test_str
-  
+
   uni_test_li = stri_split_fixed(uni_test_str,"-")
   names(uni_test_li) = uni_test_str
-  
+
   uni_bg_color = sapply(uni_test_li, function(els) {
     html_color_grad(bg_colors[els])
   })
   html_cell_df = df %>%
-    select(cellid) %>% 
+    select(cellid) %>%
     mutate(
       test_str = test_str,
       class = uni_test_class[test_str],
@@ -89,5 +86,5 @@ flag_cols_to_str = function(df, just_cols = NULL) {
     )
   }
   test_str
-  
+
 }
