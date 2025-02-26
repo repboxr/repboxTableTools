@@ -1,0 +1,14 @@
+Package: repboxTableTools
+Type: Package
+Title: Tools to characterize, test and repair extracted tables from articles
+Version: 0.1.0
+Author: Sebastian Kranz
+Maintainer: Sebastian Kranz <sebastian.kranz@uni-ulm.de>
+Description: While ExtractSciTab is only about heuristically extracting tables from PDF,
+  this package contains helper function to characterize test and repair multiple versions
+  of extracted tables (including AI extraction methods). It mainly complements repboxAI.
+  To avoid that repboxAI becomes too gluttered, we put this into a separate package.
+License: GPL >= 2.0
+Depends: repboxUtils, repboxDB, stringi
+Encoding: UTF-8
+LazyData: true
