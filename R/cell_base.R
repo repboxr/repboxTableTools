@@ -18,8 +18,6 @@ cells_have_cell_base = function(cell_df) {
 
 cells_add_cell_base = function(cell_df, add_tests = TRUE) {
   restore.point("cell_df_to_cell_base_prof")
-  cell_df = cell_list
-  prod$vars
 
   # We only extract number if it is at the beginning
   # of in a bracket
@@ -55,9 +53,9 @@ cells_add_cell_base = function(cell_df, add_tests = TRUE) {
       TRUE ~ ""
     )
   )
-  if (length( setdiff(prod$vars, colnames(cell_df)) ) > 0) {
-    stop("Not all variables in cell_base generated.")
-  }
+  # if (length( setdiff(prod$vars, colnames(cell_df)) ) > 0) {
+  #   stop("Not all variables in cell_base generated.")
+  # }
 
   if (add_tests) {
     cell_df = cells_add_all_tests(cell_df)
