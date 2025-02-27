@@ -13,76 +13,63 @@ example = function() {
     h1 = expand.grid(row=0, col=(-1):1)
   )
   cell_df = cells_windows_value_deci_bracket(cell_df)
-  res = compute_windows_str(cell_df, windows)
+  res = compute_windows_counts(cell_df, windows)
 }
 
-cells_windows_value_deci_bracket = function(cell_df) {
+cell_windows_value_deci_bracket = function(cell_df) {
   cell_df %>%
     mutate(
       .value = ifelse(is.true(has_deci), paste0(substr(bracket,1,1),num_str,substr(bracket,2,2) ," "), "")
     )
 }
 
-compute_windows_str = function(cell_df, windows) {
-  restore.point("compute_windows_str")
+cell_windows_compare = function(cell_df, windows) {
+  restore.point("windows_compare")
+  str_df = cells_to_window_str(cell_df, windows)
+  count_df = str_df %>%
+    left_join(comp_df, by=c("tabid","window_type","window_str")) %>%
+    select(.tabid, cellid, window_type, count_iid, count_vid)
+}
+
+
+cell_windows_comparator = function(cell_df, windows, comp_lab="") {
+  restore.point("compute_windows_counts")
+  str_df = cells_to_window_str(cell_df, windows)
+  comp_df = str_df %>%
+    group_by(.tabid, window_type, window_str) %>%
+    summarize(
+      count = n_distinct(iid)
+    )
+  i
+
+  field = paste0("in_", comp_lab)
+  comp_df[[field]] = 1
+
+  comp_df
+}
+
+# Helper function
+cells_to_window_str = function(cell_df, windows) {
+
   if (!is.list(windows) | is.null(names(windows))) stop("windows must be a named list of windows")
   if (!has.col(cell_df,".value")) stop("Please specify a .value col for cell_df used to compute the windows strings")
-
-  window_labs = names(windows)
-  cell_df = cell_df %>%
-    group_by(vid, iid, tabid)
-
-  str_vars = paste0("window_str_", names(windows))
-  if (is.null(names(windows))) {
-    str_vars = "window_str"
-  }
-  i = 1
-
-
-
-
-  for (i in seq_along(windows)) {
-    if (!is.null(names(windows)))
-    cell_df = cell_df %>%
-      mutate(!!str_vars[i] := cells_window_str(.value, windows[[i]], row, col, .row_col) )
-  }
-
-  agg_df = bind_rows(lapply(str_vars, function(str_var) {
-    str_var_sym = sym(str_var)
-    window_lab = str.right.of(str_var,"window_str_")
-    agg_df = cell_df %>%
-      group_by(tabid, !!str_var_sym) %>%
-      summarize(
-        window_lab = window_lab,
-        count = n(),
-        count_iid = n_distinct(iid),
-        count_vid = n_distinct(vid),
-        .groups = "drop"  # This explicitly drops all grouping
-      ) %>%
-      rename(window_str = !!str_var_sym)
-    agg_df
-  }))
-
-
-  list(cell_df=cell_df, win_df = agg_df, window_labels = names(windows))
+  window_types = names(windows)
+  df = cell_df %>%
+    group_by(tabid, .tabid) %>%
+    select(tabid, .tabid, cellid, )
+  str_df = bind_rows(lapply(seq_along(window_types), function(i) {
+    df %>% mutate(
+      window_type=window_types[i],
+      window_str = make_cell_window_str(.value, windows[[i]], row, col, .row_col)
+    )
+  })) %>%
+    ungroup()
+  str_df
 }
 
 
-
-cells_prepare_for_window = function(cell_df) {
-  .tabid = cell_df$tabid
-  if ("iid" %in% colnames(cell_df)) {
-    .tabid = paste0(cell_df$iid,"--", .tabid)
-  } else if ("vid" %in% colnames(cell_df)) {
-    .tabid = paste0(cell_df$iid,"--", .tabid)
-  }
-  cell_df$.tabid = .tabid
-  cell_df$.row_col = paste0(cell_df$row, "-", cell_df$col)
-  cell_df
-}
-
-cells_window_str = function(value,window, row, col,.row_col, na_val = "", sep="") {
-  restore.point("cells_window_str")
+make_cell_window_str = function(value,window, row, col,.row_col, na_val = "", sep="") {
+  restore.point("make_cell_window_str")
   str=rep("", length(value))
   for (i in seq_len(NROW(window))) {
     if (window[i,1]==0 & window[i,2]==0) {
@@ -98,13 +85,14 @@ cells_window_str = function(value,window, row, col,.row_col, na_val = "", sep=""
   str
 }
 
-
-cells_neighbour_value = function(value,row_offset, col_offset, row, col,.row_col, na_val = NA) {
-  restore.point("cells_neighbour_value")
-  neigh_row_col = paste0(row-row_offset,"-", col-col_offset)
-  inds = match(neigh_row_col, .row_col)
-  res = value[inds]
-  if (!is.na(na_val)) res = na_val(res, na_val)
-  res
+cells_prepare_for_window = function(cell_df) {
+  .tabid = cell_df$tabid
+  if ("iid" %in% colnames(cell_df)) {
+    .tabid = paste0(cell_df$iid,"--", .tabid)
+  } else if ("vid" %in% colnames(cell_df)) {
+    .tabid = paste0(cell_df$iid,"--", .tabid)
+  }
+  cell_df$.tabid = .tabid
+  cell_df$.row_col = paste0(cell_df$row, "-", cell_df$col)
+  cell_df
 }
-
