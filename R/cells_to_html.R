@@ -1,5 +1,27 @@
 # Functions to show cell test results as HTML
 
+cell_df_to_simple_tabhtml = function(cell_df) {
+  restore.point("cell_df_to_simple_tabhtml")
+  html_df = cell_df %>%
+    group_by(cellid) %>%
+    mutate(td_code = paste0(
+      '<td id = "cell-', cellid,'"',
+      ' class = "row-',row,' col-', col,'" ',
+      ifelse(is.true(rowspan>1),paste0(' rowspan="', rowspan,'" '),""),
+      ifelse(is.true(colspan>1),paste0(' colspan="', colspan,'" '),""),
+      '>', content,'</td>')
+    ) %>%
+    group_by(row) %>%
+    arrange(col) %>%
+    summarize(
+      tr_code = paste0('<tr>', paste0(td_code, collapse="\n  "),'</tr>')
+    )
+  tabhtml = paste0('<table>\n',paste0(html_df$tr_code, collapse="\n  "), '\n</table>')
+  tabhtml
+}
+
+
+
 cells_to_tabhtml = function(cell_df, tabid_prefix="tab-", add_flags = FALSE) {
   restore.point("cells_to_tabhtml")
 
@@ -7,11 +29,13 @@ cells_to_tabhtml = function(cell_df, tabid_prefix="tab-", add_flags = FALSE) {
     cell_df = cells_add_flag_cols_html(cell_df)
   }
 
+  if (!has_col(cell_df, "text")) cell_df$text = cell_df$content
   if (!has_col(cell_df, "class")) cell_df$class = ""
   if (!has_col(cell_df, "title")) cell_df$title = ""
   if (!has_col(cell_df, "style")) cell_df$style = ""
   if (!has_col(cell_df, "tab_class")) cell_df$tab_class = ""
 
+  names(cell_df)
   tab_df = cell_df %>%
     group_by(tabid, cellid) %>%
     mutate(td_code = paste0(

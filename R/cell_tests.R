@@ -1,6 +1,6 @@
 cells_add_all_tests = function(cell_df) {
   cell_df = cell_df %>%
-    test_cell_base_no_two_num() %>%
+    #test_cell_base_no_two_num() %>%
     test_cell_base_miss_bracket_below() %>%
     test_cell_base_miss_num_above_bracket()
 }
@@ -13,20 +13,20 @@ flag_if_relevant = function(flag, relevant) {
 }
 
 
-
-test_cell_base_no_two_num = function(df,...) {
-  restore.point("test_cell_base_no_two_num")
-  test_df = df %>% mutate(
-    has_deci_other = is.true(stri_detect_fixed(other_num_str, ".")),
-    flag_two_num = (!is.na(other_num_str)) %>%
-      flag_if_relevant(has_num),
-    flag_two_deci =  ((!is.na(other_num_str)) & (has_deci & has_deci_other)) %>%
-      flag_if_relevant(has_deci)
-  )
-  temp = filter(test_df,tabid==3)
-  test_df
-
-}
+#
+# test_cell_base_no_two_num = function(df,...) {
+#   restore.point("test_cell_base_no_two_num")
+#   test_df = df %>% mutate(
+#     has_deci_other = is.true(stri_detect_fixed(other_num_str, ".")),
+#     flag_two_num = (!is.na(other_num_str)) %>%
+#       flag_if_relevant(has_num),
+#     flag_two_deci =  ((!is.na(other_num_str)) & (has_deci & has_deci_other)) %>%
+#       flag_if_relevant(has_deci)
+#   )
+#   temp = filter(test_df,tabid==3)
+#   test_df
+#
+# }
 
 test_cell_base_miss_bracket_below = function(df,...) {
   restore.point("test_cell_base_expect_bracket_below")
