@@ -77,3 +77,44 @@ tabtitle_to_tabid = function(tabtitle) {
   tabname_to_tabid(tabname)
 }
 
+
+tabid_normalize = function(tabid) {
+  restore.point("tabid_normalize")
+  tabid <- stri_replace_all_regex(tabid, "([0-9])[ ]*\\.[ ]*([0-9])", "$1_$2")
+  tabid <- stri_replace_all_regex(tabid, "[^a-zA-Z0-9_]", "")
+  tabid
+}
+
+example = function() {
+  tabid_to_otabid(c("I", "IIA", "IIB", "III"))
+  tabid_to_otabid(c("i", "vA", "vB", "vIII"))
+  tabid_to_otabid(c("I", "2", "3", "4"))
+
+}
+
+tabid_to_otabid <- function(tabid, digits = 3) {
+  restore.point("tabid_to_otabid")
+  if (length(tabid)==0) return(tabid)
+  # Extract the longest contiguous roman numeral prefix (case-insensitive)
+  roman_pos <- stri_locate_first_regex(tabid, "^(?i)[IVX]+")
+  roman_rows = !is.na(roman_pos[,1])
+  if (length(roman_rows)>=0.5*length(tabid)) {
+    val = as.integer(as.roman(stri_sub(tabid[roman_rows],roman_pos[roman_rows,1], roman_pos[roman_rows,2])))
+    tabid[roman_rows] = paste0(val, stri_sub(tabid[roman_rows],roman_pos[roman_rows,2]+1))
+  }
+
+
+  # Vectorized extraction of the first sequence of digits
+  matches <- stri_extract_first_regex(tabid, "[0-9]+")
+
+  # For each non-NA match, create a padded version
+  padded <- ifelse(is.na(matches), NA, sprintf(paste0("%0", digits, "d"), as.numeric(matches)))
+
+  # Replace the first occurrence of digits with the padded number where a match was found
+  result <- ifelse(is.na(matches), tabid, stri_replace_first_regex(tabid, "[0-9]+", padded))
+
+  return(result)
+}
+
+
+

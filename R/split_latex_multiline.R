@@ -32,6 +32,10 @@ example = function() {
 
 split_latex_multiline <- function(latex_vec, as_matrix=FALSE, remove_empty_cols=TRUE) {
   restore.point("split_latx_multiline")
+
+  # Some custom replacement
+  latex_vec = stri_replace_all_fixed(latex_vec,"begin{array}{r}","begin{array}")
+
   # Define supported multiline environments
   envs <- c(
     "aligned",
@@ -40,6 +44,7 @@ split_latex_multiline <- function(latex_vec, as_matrix=FALSE, remove_empty_cols=
     "gather(?:\\*?)",
     "multline(?:\\*?)",
     "split",
+    "array",
     "flalign(?:\\*?)",
     "alignat(?:\\*?)",
     "eqnarray")
@@ -108,7 +113,7 @@ split_html_latex_multiline <- function(html_vec) {
   math_idx <- which(stringi::stri_detect_fixed(html_vec, '<span class="math inline">'))
 
   if (length(math_idx)==0) {
-    return(data.frame(row1==html_vec))
+    return(data.frame(row1=html_vec))
   }
 
 

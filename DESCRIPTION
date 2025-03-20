@@ -9,6 +9,6 @@ Description: While ExtractSciTab is only about heuristically extracting tables f
   of extracted tables (including AI extraction methods). It mainly complements repboxAI.
   To avoid that repboxAI becomes too gluttered, we put this into a separate package.
 License: GPL >= 2.0
-Depends: repboxUtils, repboxDB, stringi
+Depends: repboxUtils, repboxDB, stringi, rvest
 Encoding: UTF-8
 LazyData: true
