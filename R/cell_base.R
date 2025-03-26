@@ -58,7 +58,7 @@ cells_add_cell_base = function(cell_df, add_tests = TRUE, split_multi_num = FALS
   # }
   if (split_multi_num) {
     cell_df = cell_base_split_multi_num(cell_df, add_tests = add_tests)
-    cat("split_multi_num")
+    #cat("split_multi_num")
     restore.point("post_split_multi_num")
   }
 

@@ -24,17 +24,17 @@ example = function() {
 
 xml_all_text <- function(node) {
   return(rvest::html_text2(node))
-  
+
   # Select all nodes (elements, text nodes, etc.) in the subtree including the node itself.
   nodes <- xml_find_all(node, "descendant-or-self::node()")
-  
+
   # For each node, extract its text content (trimming any extra whitespace)
   texts <- vapply(nodes, function(n) xml_text(n, trim = TRUE), character(1))
-  
+
   # Remove any empty strings and return the result as a character vector.
   texts[nzchar(texts)]
 }
-  
+
 example = function() {
   tabhtml = "<table><td> My text <span>is here</span>, right?</td></table>"
   tabhtml = '<table><td style="text-align: right;"><span class="math inline">(16.7)</span></td></table>'
@@ -44,7 +44,7 @@ example = function() {
 html_table_cells_to_text <- function(tabhtml, all_text = TRUE) {
   restore.point("html_table_cells_to_text")
   # Parse the input HTML string.
-  
+
   doc = read_html(tabhtml)
   table_node = rvest::html_element(doc, "table")
 
@@ -70,7 +70,7 @@ html_table_add_cellnum_row_col <- function(html, id_prefix = "cell-") {
   library(xml2)
   restore.point("html_table_add_cellnum_row_col")
   if (is.null(html)) return(NULL)
-  
+
   # Parse the HTML string into an XML document
   doc <- read_html(html)
 
@@ -97,8 +97,8 @@ html_table_add_cellnum_row_col <- function(html, id_prefix = "cell-") {
     for (attr in data_attrs) {
       xml_attr(tr, attr) <- NULL
     }
-    
-    
+
+
     col <- 1  # starting column index for this row
     # Get all cells (<td> or <th>) in the row
     cells <- xml_find_all(rows[[r]], "./th|./td")
@@ -121,13 +121,13 @@ html_table_add_cellnum_row_col <- function(html, id_prefix = "cell-") {
       xml_attr(cell, "id") <- NULL
       xml_attr(cell, "class") <- NULL
       xml_attr(cell, "style") <- NULL
-      
+
       # Remove any data-* attributes
       data_attrs <- names(xml_attrs(cell))[grep("^data-", names(xml_attrs(cell)))]
       for (attr in data_attrs) {
         xml_attr(cell, attr) <- NULL
       }
-      
+
       # Add new attributes:
       xml_set_attr(cell, "id", paste0(id_prefix, cell_num))
       xml_set_attr(cell, "class", paste0("row-", r, " col-", cell_col))
@@ -167,11 +167,11 @@ normalized_html_tab_to_cell_df <- function(html) {
   restore.point("normalized_html_tab_to_cell_df")
   # Parse HTML
   doc <- read_html(html)
-  
+
   # Extract all td and th elements
   #cells <- html_elements(doc, "td")
   cells <- html_elements(doc, "td, th")
-  
+
   # Extract attributes and text content vectorized
   cell_ids <- html_attr(cells, "id")
   cell_classes <- html_attr(cells, "class")
@@ -184,12 +184,12 @@ normalized_html_tab_to_cell_df <- function(html) {
 
   cell_rowspan <- as.integer(html_attr(cells, "rowspan"))
   cell_rowspan[is.na(cell_rowspan)] <- 1  # Default rowspan is 1
-  
+
   # Extract row and column numbers from classes
   # Using vectorized string operations
   row_nums <- as.integer(sub(".*row-(\\d+).*", "\\1", cell_classes))
   col_nums <- as.integer(sub(".*col-(\\d+).*", "\\1", cell_classes))
-  
+
   # Create the dataframe
   df <- data.frame(
     cellid = cell_ids,
@@ -202,40 +202,55 @@ normalized_html_tab_to_cell_df <- function(html) {
     text = cell_text,
     stringsAsFactors = FALSE
   )
-  
+
   # Sort by row and column
   #df <- df[order(df$row, df$col), ]
-  
+
   # Reset row names
   rownames(df) <- NULL
-  
+
   return(df)
 }
 
-rai_write_all_tables_html = function(tab_df,html_file=NULL, html_col = "tabhtml", out_dir=NULL, info=NULL, title=NULL) {
+rai_write_all_tables_html = function(tab_df,html_file=NULL, html_col = "tabhtml", notes_col ="tabnotes", title_col = "tabtitle", out_dir=NULL, info=NULL, title=NULL) {
   restore.point("rai_write_all_tables_html")
-  style = "<style> 
+  style = "<style>
   table { border-spacing: 0px; border-collapse: collapse;}
   table td {padding-left: 4px; padding-right: 4px; padding-top: 2px; padding-bottom: 2px; border: 1px solid lightgray;} </style>"
   meta_head = '<head><meta charset="UTF-8"></head>'
   head = paste0(meta_head, "\n", style)
   if (!is.null(title)) head = paste0(head,"<h1>", title, "</h1>")
   if (!is.null(out_dir)) head = paste0(head,"<p><pre>", out_dir, "</pre></p>")
-  tab_html = paste0(paste0("<h2>Table ", tab_df$tabid,"</h2>", tab_df$tabhtml,"<br>", collapse = "\n"))
+  if (title_col %in% names(tab_df)) {
+    tabtitles = na_val(tab_df[[title_col]],"")
+  } else {
+    tabtitles = rep("", NROW(tab_df))
+  }
+  rows = tabtitles != ""
+  tabtitles[rows] = stri_replace_first_fixed(tabtitles[rows], paste0("Table ", tab_df$tabid[rows]),"")
+
+
+  tab_html = paste0(paste0("<h2>Table ", tab_df$tabid, tabtitles, "</h2>", tab_df$tabhtml))
+  if (notes_col %in% colnames(tab_df)) {
+    tab_html = paste0(tab_html, "<p>", na_val(tab_df[[notes_col]],""),"</p>")
+  } else {
+    tab_html = paste0(tab_html, "<br>")
+  }
+  tab_html = paste0(tab_html, collapse="\n")
   foot = ""
   if (!is.null(info) & !is.null(out_dir)) {
     info = as.list(info)
     foot = paste0(foot, "<ul>", paste0("<li>",names(info), ": ", info, " </li>", collapse="\n"),"</ul>")
   }
 
-  
+
   html = paste0(head, "\n", tab_html, foot)
   if (is.null(html_file)) return(invisible(html))
   if (basename(html_file)==html_file & !is.null(out_dir)) html_file = file.path(out_dir, html_file)
   writeUtf8(html, html_file)
   #writeLines(html, html_file)
   invisible(html)
-  
+
 }
 
 
@@ -243,10 +258,10 @@ html_escape <- function(text) {
   if (is.null(text) || length(text) == 0) {
     return(text)
   }
-  
+
   # Convert to character if not already
   text <- as.character(text)
-  
+
   # Use stringi's vectorization capabilities directly
   # Note: Order matters - & must be replaced first to avoid double-escaping
   text <- stringi::stri_replace_all_fixed(text, "&", "&amp;")
@@ -254,7 +269,7 @@ html_escape <- function(text) {
   text <- stringi::stri_replace_all_fixed(text, ">", "&gt;")
   text <- stringi::stri_replace_all_fixed(text, "\"", "&quot;")
   text <- stringi::stri_replace_all_fixed(text, "'", "&#39;")
-  
+
   return(text)
 }
 
@@ -263,10 +278,10 @@ html_unescape <- function(text) {
   if (is.null(text) || length(text) == 0) {
     return(text)
   }
-  
+
   # Convert to character if not already
   text <- as.character(text)
-  
+
   # Replace HTML entities with their corresponding characters
   # Note: Order matters - & must be replaced last to avoid issues with other entities
   text <- stringi::stri_replace_all_fixed(text, "&quot;", "\"")
@@ -274,6 +289,6 @@ html_unescape <- function(text) {
   text <- stringi::stri_replace_all_fixed(text, "&lt;", "<")
   text <- stringi::stri_replace_all_fixed(text, "&gt;", ">")
   text <- stringi::stri_replace_all_fixed(text, "&amp;", "&")
-  
+
   return(text)
 }
