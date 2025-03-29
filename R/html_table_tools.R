@@ -223,14 +223,14 @@ rai_write_all_tables_html = function(tab_df,html_file=NULL, html_col = "tabhtml"
   if (!is.null(out_dir)) head = paste0(head,"<p><pre>", out_dir, "</pre></p>")
   if (title_col %in% names(tab_df)) {
     tabtitles = na_val(tab_df[[title_col]],"")
+    tabtitles = stri_replace_first_regex(tabtitles,paste0("^[ \t]*Table[\\: \t]*[IVX]*[A-Z]?[\\.- ]*[0-9]*[ ]*"),"", opts_regex = stri_opts_regex(case_insensitive = TRUE))
+    tabtitles = stri_replace_all_fixed(tabtitles,"\n","")
   } else {
     tabtitles = rep("", NROW(tab_df))
   }
   rows = tabtitles != ""
-  tabtitles[rows] = stri_replace_first_fixed(tabtitles[rows], paste0("Table ", tab_df$tabid[rows]),"")
 
-
-  tab_html = paste0(paste0("<h2>Table ", tab_df$tabid, tabtitles, "</h2>", tab_df$tabhtml))
+  tab_html = paste0(paste0("<h2>Table ", tab_df$tabid, " ", tabtitles, "</h2>", tab_df$tabhtml))
   if (notes_col %in% colnames(tab_df)) {
     tab_html = paste0(tab_html, "<p>", na_val(tab_df[[notes_col]],""),"</p>")
   } else {
