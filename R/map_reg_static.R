@@ -1,16 +1,94 @@
 example = function() {
   library(repboxDB)
   library(repboxTableTools)
+  library(repboxAI)
   project_dir = "~/repbox/projects_share/aejapp_1_2_7"
+  project_dir = "~/repbox/projects_share/aejmic_10_1_1"
 
-  map_df = readRDS("~/repbox/projects_share/aejapp_1_2_7/fp/prod_art/map_reg_static/g25pe/v0/prod_df.Rds")
+  rtt_map_reg_static_report(project_dir)
+}
 
-  tab_df = readRDS("~/repbox/projects_share/aejapp_1_2_7/fp/prod_art/tab_main/pdf-g2f/v0/prod_df.Rds")
+rtt_map_reg_static_report = function(project_dir, ver_dir=NULL, doc_type="art") {
+  restore.point("rtt_Lmap_reg_static_report")
+  if (is.null(ver_dir)) {
+    fp_dir = project_dir_to_fp_dir(project_dir, doc_type)
+    ver_dir = fp_pick_prod_ver(fp_dir, "map_reg_static")$ver_dir
+  }
 
-  cell_df = readRDS("~/repbox/projects_share/aejapp_1_2_7/fp/prod_art/cell_base/pdf-g2f/v0/prod_df.Rds")
+  df_li = rtt_load_map_reg_static_df_li(ver_dir)
+
+  # Make table pane
+  tab_df = rtt_map_reg_static_tab_df(ver_dir,df_li)
+  contents = paste0("<h2>", tab_df$tabtitle,"</h2>",  tab_df$show_tabhtml, "<p>", tab_df$tabnotes,"</p>")
+  tab_panels = rtt_tabset_panel("tabs",tabids = paste0("tab-",new_tab_df$tabid),tabnames = paste0("Table ", new_tab_df$tabid),contents = contents)
+
+
+  # Make code pane
+  names(script_df)
+  code_df = script_df %>%
+    mutate(
+      code = list(sep.lines(text))
+    ) %>%
+    select(do_file, script_num, code) %>%
+    tidyr::unnest(code) %>%
+    group_by(do_file, script_num) %>%
+    mutate(line = seq_len(n())) %>%
+    ungroup() %>%
+    mutate(
+      code_id = paste0("L", line, "___", script_num),
+      html_row = paste0(
+        '<tr><td class="code-line-td">', line,"</td>",
+        '<td><pre class="do-pre"><code id="', code_id,'" class="noerr-line" title="">',code,'</code></pre></td></tr>'
+      )
+    )
+  code_html_df = code_df %>%
+    group_by(do_file, script_num) %>%
+    summarize(
+      contents = paste0('<table class="code-tab">', paste0(code_df$html_row, collapse="\n"),"</table>")
+    )
+  code_panels = rtt_tabset_panel("scripts",tabids = paste0("script-",code_html_df$script_num),tabnames = paste0(code_html_df$do_file),contents = code_html_df$contents)
+
+
+  library(shiny)
+  body_ui = fluidPage(
+    div(class="row",style="height: 100vh;",
+        div(id="do-col-div", class="col-sm-7", style="overflow-y: scroll; height:100%; padding: 5px",HTML(code_panels)),
+        div(id="tabs-col-div",class="col-sm-5", style="overflow-y: scroll; height:100%; padding: 5px", HTML(tab_panels))
+    ),
+  )
+  body = as.character(body_ui) %>% merge.lines()
+  html = rtt_html_page(body, "Mapping Regressions to Static Code")
+  proc_id = fp_ver_dir_to_proc_id(ver_dir)
+  html_file = file.path(project_dir, "reports",paste0("map_static_reg-", proc_id,".html"))
+  writeLines(html,html_file)
+  rstudioapi::filesPaneNavigate(file.path(project_dir, "reports"))
+
+}
+
+rtt_load_map_reg_static_df_li = function(ver_dir) {
+  restore.point("rtt_load_map_reg_static_df")
+  pru = fp_load_pru(ver_dir)
+  if (is.null(pru)) return(NULL)
+  tab_info = pru$tab_main_info
+  map_df = fp_load_prod_df(ver_dir)
+  tab_df = fp_load_prod_df(tab_info$ver_dir)
+
+  fp_dir = fp_ver_dir_to_fp_dir(ver_dir)
+  cell_ver_dir = fp_pick_prod_ver(fp_dir, "cell_base", proc_id = tab_info$proc_id)
+  cell_df = fp_load_prod_df(cell_ver_dir$ver_dir)
+
+  project_dir = dirname(dirname(fp_dir))
 
   parcels = repboxDB::repdb_load_parcels(project_dir, "stata_source")
   script_df = parcels$stata_source$script_source
+  script_df = repboxAI::script_df_shorten_file(script_df) %>% rename(do_file=file)
+
+  list(map_df=map_df, tab_df=tab_df, cell_df = cell_df, script_df=script_df)
+}
+
+rtt_map_reg_static_tab_df = function(ver_dir, df_li=rtt_load_map_reg_static_df(ver_dir)) {
+  restore.point("rtt_map_reg_static_tab_df")
+  copy.into.env(df_li)
 
 
   map_df = map_df_add_bg_color(map_df)
@@ -20,35 +98,27 @@ example = function() {
   extra_cell_df = map_cell %>%
     group_by(tabid, cellid) %>%
     summarize(
-      bg_css = css_color_gradient(bg_color),
-      help = paste0(unique(paste0(do_file,": ", code_line)), collapse="\n")
-    )
+      style = html_color_grad(bg_color),
+      title = paste0(unique(paste0("\n reg-index:",reg_ind,"\n", do_file,": ", code_line)), collapse="\n")
+    ) %>%
+    mutate(cellid = str.right.of(cellid, "cell-"))
+
   cell_df = cell_df %>%
-    left
+    left_join_overwrite(extra_cell_df, by = c("tabid", "cellid")) %>%
+    mutate(style = na_val(style, ""), title = na_val(title,""))
 
-}
+  new_tab_df = cells_to_tabhtml(cell_df) %>% rename(show_tabhtml = tabhtml)
 
-
-css_color_gradient <- function(colors) {
-  if (length(colors) == 1) {
-    # Only one color, so set it as the background color
-    return(paste0("background-color: ", colors, ";"))
-  } else {
-    # More than one color, so create a linear gradient.
-    # This example uses a 90 degree gradient; adjust the angle if needed.
-    gradient <- paste0(colors, collapse = ", ")
-    return(paste0("background: linear-gradient(45deg, ", gradient, ");"))
-  }
+  tab_df = tab_df %>% left_join(new_tab_df, by = "tabid")
+  tab_df
 }
 
 map_df_add_bg_color = function(map_reg) {
-  map_reg$bg_color = repboxHtml::cmd_ind_colors(NROW(map_reg))
+  map_reg$bg_color = cell_bg_colors(NROW(map_reg))
   map_reg
 }
 
-static_tab_html = function(tab_main)
-
-static_code_file_html = function(script_df) {
+rtt_static_code_file_html = function(script_df) {
 
 
 }
