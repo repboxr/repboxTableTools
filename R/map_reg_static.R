@@ -4,9 +4,28 @@ example = function() {
   library(repboxAI)
   project_dir = "~/repbox/projects_share/aejapp_1_2_7"
   project_dir = "~/repbox/projects_share/aejmic_10_1_1"
-
   rtt_map_reg_static_report(project_dir)
   rstudioapi::filesPaneNavigate(project_dir)
+
+  project_dirs = repboxExplore::get_project_dirs("~/repbox/projects_share")
+  project_dirs
+  for (project_dir in project_dirs) {
+    rtt_map_reg_static_report(project_dir)
+    #rtt_copy_extra_files_to_report(project_dir)
+  }
+}
+
+rtt_copy_extra_files_to_report = function(project_dir) {
+  restore.point("rtt_copy_extra_files_to_report")
+
+  dest_dir = file.path(project_dir, "reports")
+  file = system.file("www/repbox.css",package = "repboxHtml")
+  file.copy(file, file.path(dest_dir, basename(file)),overwrite = TRUE)
+
+  file = system.file("www/static_code_links.js",package = "repboxTableTools")
+  file.copy(file, file.path(dest_dir, basename(file)),overwrite = TRUE)
+
+
 }
 
 rtt_map_reg_static_report = function(project_dir, ver_dir=NULL, doc_type="art") {
@@ -15,6 +34,7 @@ rtt_map_reg_static_report = function(project_dir, ver_dir=NULL, doc_type="art") 
     fp_dir = project_dir_to_fp_dir(project_dir, doc_type)
     ver_dir = fp_pick_prod_ver(fp_dir, "map_reg_static")$ver_dir
   }
+  if (length(ver_dir)==0) return(NULL)
 
   df_li = rtt_load_map_reg_static_df_li(ver_dir)
   map_df = df_li$map_df; script_df = df_li$script_df
@@ -29,12 +49,14 @@ rtt_map_reg_static_report = function(project_dir, ver_dir=NULL, doc_type="art") 
   # Make code pane
   names(script_df)
   code_df = script_df %>%
+    group_by(script_file, script_num) %>%
     mutate(
       code = list(sep.lines(text))
     ) %>%
     select(script_file, script_num, code) %>%
-    tidyr::unnest(code) %>%
+    ungroup() %>%
     group_by(script_file, script_num) %>%
+    tidyr::unnest(code) %>%
     mutate(line = seq_len(n())) %>%
     ungroup() %>%
     mutate(
@@ -47,7 +69,7 @@ rtt_map_reg_static_report = function(project_dir, ver_dir=NULL, doc_type="art") 
   code_html_df = code_df %>%
     group_by(script_file, script_num) %>%
     summarize(
-      contents = paste0('<table class="code-tab">', paste0(code_df$html_row, collapse="\n"),"</table>")
+      contents = paste0('<table class="code-tab">', paste0(html_row, collapse="\n"),"</table>")
     )
   code_panels = rtt_tabset_panel("script_tabs",tabids = paste0("script_tab-",code_html_df$script_num),tabnames = paste0(code_html_df$script_file),contents = code_html_df$contents)
 
@@ -62,11 +84,19 @@ rtt_map_reg_static_report = function(project_dir, ver_dir=NULL, doc_type="art") 
   body = as.character(body_ui) %>% merge.lines()
   html = rtt_html_page(body, "Mapping Regressions to Static Code")
   proc_id = fp_ver_dir_to_proc_id(ver_dir)
-  html_file = file.path(project_dir, "reports",paste0("map_static_reg-", proc_id,".html"))
+  dest_dir = file.path(project_dir, "reports")
+  html_file = file.path(dest_dir,paste0("map_static_reg-", proc_id,".html"))
+  # Copy script and css files
+
+  rtt_copy_extra_files_to_report(project_dir)
+
+
   writeLines(html,html_file)
   rstudioapi::filesPaneNavigate(file.path(project_dir, "reports"))
 
 }
+
+
 
 rtt_load_map_reg_static_df_li = function(ver_dir) {
   restore.point("rtt_load_map_reg_static_df")
