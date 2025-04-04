@@ -1,4 +1,4 @@
-rtt_html_page = function(body, title="", header=rtt_html_header(), footer_scripts = "rtt_links.js" ) {
+rtt_html_page = function(body, title="", header=rtt_html_header(), footer_scripts = "static_code_links.js" ) {
   if (length(footer_scripts)>0) {
     footer_code = paste0('<script src="', footer_scripts,'"></script>', collapse="\n")
   } else {
@@ -38,7 +38,7 @@ rtt_html_header_standalone = function() {
     includeScript(file.path(dir,"shared/jquery.min.js")),
     includeCSS(file.path(dir,"shared/bootstrap.min.css")),
     includeScript(file.path(dir,"shared/bootstrap.min.js")),
-    includeCSS(file.path(dir,"repbox.css")),
-    includeCSS(file.path(dir,"link-menu.css"))
+    includeCSS(file.path(dir,"repbox.css"))
+    #includeCSS(file.path(dir,"link-menu.css"))
   ))
 }

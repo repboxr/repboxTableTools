@@ -22,7 +22,7 @@ cell_df_to_simple_tabhtml = function(cell_df) {
 
 
 
-cells_to_tabhtml = function(cell_df, tabid_prefix="tab-", add_flags = FALSE) {
+cells_to_tabhtml = function(cell_df, tabid_prefix="tab-", add_flags = FALSE, tab_class=NULL, data_cols = NULL) {
   restore.point("cells_to_tabhtml")
 
   if (add_flags) {
@@ -35,6 +35,13 @@ cells_to_tabhtml = function(cell_df, tabid_prefix="tab-", add_flags = FALSE) {
   if (!has_col(cell_df, "style")) cell_df$style = ""
   if (!has_col(cell_df, "tab_class")) cell_df$tab_class = ""
 
+  td_data = rep("", NROW(cell_df))
+  for (col in data_cols) {
+    td_data = paste0(td_data, ifelse(is.na(cell_df[[col]]), "", paste0(' data-', col,'="', cell_df[[col]],'"') ))
+  }
+  cell_df$.td_data_str = td_data
+
+  .tab_class = tab_class
   names(cell_df)
   tab_df = cell_df %>%
     group_by(tabid, cellid) %>%
@@ -42,7 +49,8 @@ cells_to_tabhtml = function(cell_df, tabid_prefix="tab-", add_flags = FALSE) {
       '<td id = "cell-', cellid,'"',
       ' class = "row-',row,' col-', col, ' ', class,'" ',
       ' style = "', style,'" ',
-      ' title = "', paste0(cellid, "\nrow ", row, " col ",col,"\n", title,'" '),
+      ' title = "', paste0(cellid, " (row ", row, " col ",col,")\n", title,'" '),
+      .td_data_str,
       ifelse(is.true(rowspan>1),paste0(' rowspan="', rowspan,'" '),""),
       ifelse(is.true(colspan>1),paste0(' colspan="', colspan,'" '),""),
       '>', text,'</td>')
@@ -54,7 +62,7 @@ cells_to_tabhtml = function(cell_df, tabid_prefix="tab-", add_flags = FALSE) {
     ) %>%
     group_by(tabid, tab_class) %>%
     summarize(
-      tabhtml = paste0('<table id="', tabid_prefix,first(tabid),'" class = "', first(tab_class),'">\n',paste0(tr_code, collapse="\n  "), '\n</table>')
+      tabhtml = paste0('<table id="', tabid_prefix,first(tabid),'" class = "', paste0(first(tab_class)," ", .tab_class), '">\n',paste0(tr_code, collapse="\n  "), '\n</table>')
     )
 
   tab_df
