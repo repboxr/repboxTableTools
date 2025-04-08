@@ -65,7 +65,7 @@ cell_df_split_rows_and_cols = function(cell_df,row_df, col_split_char="|") {
     df = df %>%
       mutate(row = match(row, row_vals)) %>%
       arrange(row, col) %>%
-      mutate(cellid = paste0("cell-",tabid, "_", 1:n()))
+      mutate(cellid = paste0("c",tabid, "_", 1:n()))
 
   } else if (num_cr==1) {
     df$content = row_df$row1
@@ -101,7 +101,7 @@ cell_df_split_rows_and_cols = function(cell_df,row_df, col_split_char="|") {
     df = df %>%
       mutate(col = match(col, col_vals)) %>%
       arrange(row, col) %>%
-      mutate(cellid = paste0("cell-",tabid, "_", 1:n()))
+      mutate(cellid = paste0("c",tabid, "_", 1:n()))
 
   } else if (num_cc==1) {
     df$content = col_mat[,1]

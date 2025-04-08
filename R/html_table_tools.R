@@ -66,7 +66,8 @@ html_table_cells_to_text <- function(tabhtml, all_text = TRUE) {
   as.character(table_node)
 }
 
-html_table_add_cellnum_row_col <- function(html, id_prefix = "cell-") {
+# id_prefix should have form "c{tabid}_"
+html_table_add_cellnum_row_col <- function(html,tabid=0, id_prefix=paste0("c", tabid,"_")) {
   library(xml2)
   restore.point("html_table_add_cellnum_row_col")
   if (is.null(html)) return(NULL)
@@ -163,7 +164,7 @@ html_table_add_cellnum_row_col <- function(html, id_prefix = "cell-") {
 library(rvest)
 library(dplyr)
 
-normalized_html_tab_to_cell_df <- function(html) {
+normalized_html_tab_to_cell_df <- function(html, tabid="0") {
   restore.point("normalized_html_tab_to_cell_df")
   # Parse HTML
   doc <- read_html(html)
@@ -192,6 +193,7 @@ normalized_html_tab_to_cell_df <- function(html) {
 
   # Create the dataframe
   df <- data.frame(
+    tabid = tabid,
     cellid = cell_ids,
     row = row_nums,
     col = col_nums,

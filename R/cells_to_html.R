@@ -5,7 +5,7 @@ cell_df_to_simple_tabhtml = function(cell_df) {
   html_df = cell_df %>%
     group_by(cellid) %>%
     mutate(td_code = paste0(
-      '<td id = "cell-', cellid,'"',
+      '<td id = "', cellid,'"',
       ' class = "row-',row,' col-', col,'" ',
       ifelse(is.true(rowspan>1),paste0(' rowspan="', rowspan,'" '),""),
       ifelse(is.true(colspan>1),paste0(' colspan="', colspan,'" '),""),
@@ -46,7 +46,7 @@ cells_to_tabhtml = function(cell_df, tabid_prefix="tab-", add_flags = FALSE, tab
   tab_df = cell_df %>%
     group_by(tabid, cellid) %>%
     mutate(td_code = paste0(
-      '<td id = "cell-', cellid,'"',
+      '<td id = "', cellid,'"',
       ' class = "row-',row,' col-', col, ' ', class,'" ',
       ' style = "', style,'" ',
       ' title = "', paste0(cellid, " (row ", row, " col ",col,")\n", title,'" '),

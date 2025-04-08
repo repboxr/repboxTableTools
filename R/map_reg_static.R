@@ -139,8 +139,7 @@ rtt_map_reg_static_tab_df = function(ver_dir, df_li=rtt_load_map_reg_static_df(v
       style = html_color_grad(bg_color),
       title = paste0(unique(paste0("reg_ind: ",reg_ind,"\nL", code_line, ": ", script_file)), collapse="\n"),
       class = "arttabcell"
-    ) %>%
-    mutate(cellid = str.right.of(cellid, "cell-"))
+    )
 
   cell_df = cell_df %>%
     left_join_overwrite(extra_cell_df, by = c("tabid", "cellid")) %>%
